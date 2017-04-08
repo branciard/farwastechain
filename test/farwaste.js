@@ -2,7 +2,6 @@ var FarWaste = artifacts.require("./FarWaste.sol");
 
 //extensions.js : credit to : https://github.com/coldice/dbh-b9lab-hackathon/blob/development/truffle/utils/extensions.js
 const Extensions = require("../utils/extensions.js");
-var BigNumber = require("../utils/bignumber.min.js");
 var moment = require("../utils/moment.min.js");
 Extensions.init(web3, assert);
 
@@ -39,10 +38,8 @@ contract('FarWaste', function(accounts) {
             web3.eth.getBalancePromise(wasteOwner),
             FarWaste.new(2,3,4,5,6)
           ])
-          .then(result => {
-            sheriffInitialBalance=result[0];
-            wasteOwnerInitialBalance=result[1];
-            aFarWasteInstance =result[2];
+          .then(results => {
+            [sheriffInitialBalance,wasteOwnerInitialBalance,aFarWasteInstance]=results;
           });
       });
 
@@ -54,12 +51,13 @@ contract('FarWaste', function(accounts) {
             aFarWasteInstance.maxWasteChaseDuration.call(),
             aFarWasteInstance.maxWasteChaseByUser.call()
           ])
-          .then( result  => {
-            assert.strictEqual(result[0].toNumber(), 2, "minChasePrice assigned");
-            assert.strictEqual(result[1].toNumber(), 3, "maxChasePrice assigned");
-            assert.strictEqual(result[2].toNumber(), 4, "minWasteChaseDuration assigned");
-            assert.strictEqual(result[3].toNumber(), 5, "maxWasteChaseDuration assigned");
-            assert.strictEqual(result[4].toNumber(), 6, "maxWasteChaseByUser assigned");
+          .then( results  => {
+            [minChasePrice,maxChasePrice,minWasteChaseDuration,maxWasteChaseDuration,maxWasteChaseByUser]=results
+            assert.strictEqual(minChasePrice.toNumber(), 2, "minChasePrice assigned");
+            assert.strictEqual(maxChasePrice.toNumber(), 3, "maxChasePrice assigned");
+            assert.strictEqual(minWasteChaseDuration.toNumber(), 4, "minWasteChaseDuration assigned");
+            assert.strictEqual(maxWasteChaseDuration.toNumber(), 5, "maxWasteChaseDuration assigned");
+            assert.strictEqual(maxWasteChaseByUser.toNumber(), 6, "maxWasteChaseByUser assigned");
             return Promise.all([
               aFarWasteInstance.modifyChaseDurationLimit(50,50,{from:sheriff, gas: 3000000 }),
               aFarWasteInstance.modifyChasePriceLimit(50,50,{from:sheriff, gas: 3000000 }),
@@ -73,12 +71,13 @@ contract('FarWaste', function(accounts) {
             aFarWasteInstance.maxWasteChaseDuration.call(),
             aFarWasteInstance.maxWasteChaseByUser.call()
           ]))
-          .then( result  => {
-            assert.strictEqual(result[0].toNumber(), 50, "minChasePrice changed to 50");
-            assert.strictEqual(result[1].toNumber(), 50, "maxChasePrice changed to 50");
-            assert.strictEqual(result[2].toNumber(), 50, "minWasteChaseDuration changed to 50");
-            assert.strictEqual(result[3].toNumber(), 50, "maxWasteChaseDuration changed to 50");
-            assert.strictEqual(result[4].toNumber(), 50, "maxWasteChaseByUser changed to 50");
+          .then( results => {
+            [minChasePrice,maxChasePrice,minWasteChaseDuration,maxWasteChaseDuration,maxWasteChaseByUser]=results
+            assert.strictEqual(minChasePrice.toNumber(), 50, "minChasePrice changed to 50");
+            assert.strictEqual(maxChasePrice.toNumber(), 50, "maxChasePrice changed to 50");
+            assert.strictEqual(minWasteChaseDuration.toNumber(), 50, "minWasteChaseDuration changed to 50");
+            assert.strictEqual(maxWasteChaseDuration.toNumber(), 50, "maxWasteChaseDuration changed to 50");
+            assert.strictEqual(maxWasteChaseByUser.toNumber(), 50, "maxWasteChaseByUser changed to 50");
           }
           );
       });
@@ -153,10 +152,8 @@ contract('FarWaste', function(accounts) {
             web3.eth.getBalancePromise(wasteOwner),
             FarWaste.new(50,100,50,100,2)
           ])
-          .then(result => {
-            sheriffInitialBalance=result[0];
-            wasteOwnerInitialBalance=result[1];
-            aFarWasteInstance =result[2];
+          .then(results => {
+            [sheriffInitialBalance,wasteOwnerInitialBalance,aFarWasteInstance]=results;
           });
       });
 
@@ -165,7 +162,7 @@ contract('FarWaste', function(accounts) {
           currentTime = moment().unix();
           return aFarWasteInstance.createWasteChase(
             50,//price
-            "test desc",//desciption
+            web3.sha3("test desc"),//desciption
             50, //duration in sec
             {from:wasteOwner,value:0, gas: 3000000}
           )
@@ -179,18 +176,19 @@ contract('FarWaste', function(accounts) {
             }
           )
           .then(aWasteChase => {
-                assert.strictEqual(aWasteChase[0].toNumber(), 0, "aWasteChase WasteChaseStatus is 0 = CREATED");
-                assert.strictEqual(aWasteChase[1].toNumber(), 50, "aWasteChase chasePrice is 50");
-                assert.strictEqual(aWasteChase[2].toNumber(), currentTime + 50, "aWasteChase chaseExpiredTime is cuurentDate + 50");
-                assert.strictEqual(aWasteChase[3].toString(), "test desc", "aWasteChase chaseDescription is test desc");
-                var aWasteChaseWasteHunter = web3.toBigNumber(aWasteChase[4], 16);
+                [status,price,expirationTime,descriptionHash,hunter,owner]=aWasteChase;
+                assert.strictEqual(status.toNumber(), 1, "aWasteChase WasteChaseStatus is 1 = CREATED");
+                assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice is 50");
+                assert.strictEqual(expirationTime.toNumber(), currentTime + 50, "aWasteChase chaseExpiredTime is cuurentDate + 50");
+                assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
+                var aWasteChaseWasteHunter = web3.toBigNumber(hunter, 16);
                 assert.isTrue(aWasteChaseWasteHunter.equals(0) ,"aWasteChase wasteHunter  address not set");
-                assert.strictEqual(aWasteChase[5], wasteOwner, "aWasteChase wasteOwner is wasteOwner");
+                assert.strictEqual(owner, wasteOwner, "aWasteChase wasteOwner is wasteOwner");
                 currentTime = moment().unix();
           })
           .then(() => aFarWasteInstance.createWasteChase(
             60,//price
-            "test desc 2",//desciption
+            web3.sha3("test desc 2"),//desciption
             60, //duration in sec
             {from:wasteOwner,value:0, gas: 3000000}
           ))
@@ -204,17 +202,18 @@ contract('FarWaste', function(accounts) {
             }
           )
           .then(aWasteChase => {
-              assert.strictEqual(aWasteChase[0].toNumber(), 0, "aWasteChase WasteChaseStatus is 0 = CREATED");
-              assert.strictEqual(aWasteChase[1].toNumber(), 60, "aWasteChase chasePrice is 60");
-              assert.strictEqual(aWasteChase[2].toNumber(), currentTime + 60, "aWasteChase chaseExpiredTime is cuurentDate + 50");
-              assert.strictEqual(aWasteChase[3].toString(), "test desc 2", "aWasteChase chaseDescription is test desc");
-              var aWasteChaseWasteHunter = web3.toBigNumber(aWasteChase[4], 16);
+              [status,price,expirationTime,descriptionHash,hunter,owner]=aWasteChase;
+              assert.strictEqual(status.toNumber(), 1, "aWasteChase WasteChaseStatus is 1 = CREATED");
+              assert.strictEqual(price.toNumber(), 60, "aWasteChase chasePrice is 60");
+              assert.strictEqual(expirationTime.toNumber(), currentTime + 60, "aWasteChase chaseExpiredTime is cuurentDate + 50");
+              assert.strictEqual(descriptionHash, web3.sha3("test desc 2"), "aWasteChase chaseDescription is test desc");
+              var aWasteChaseWasteHunter = web3.toBigNumber(hunter, 16);
               assert.isTrue(aWasteChaseWasteHunter.equals(0) ,"aWasteChase wasteHunter  address not set");
-              assert.strictEqual(aWasteChase[5], wasteOwner, "aWasteChase wasteOwner is wasteOwner");
+              assert.strictEqual(owner, wasteOwner, "aWasteChase wasteOwner is wasteOwner");
               return Extensions.expectedExceptionPromise(function () {
                   return aFarWasteInstance.createWasteChase(
                     50,//price
-                    "test desc",//desciption
+                    web3.sha3("test desc"),//desciption
                     50, //duration in sec
                     {from:wasteOwner,value:0, gas: 3000000}
                   )
@@ -227,7 +226,7 @@ contract('FarWaste', function(accounts) {
           return Extensions.expectedExceptionPromise(function () {
               return aFarWasteInstance.createWasteChase(
                 49,//price
-                "test desc",//desciption
+                web3.sha3("test desc"),//desciption
                 50, //duration in sec
                 {from:wasteOwner,value:0, gas: 3000000}
               )
@@ -239,7 +238,7 @@ contract('FarWaste', function(accounts) {
           return Extensions.expectedExceptionPromise(function () {
               return aFarWasteInstance.createWasteChase(
                 101,//price
-                "test desc",//desciption
+                web3.sha3("test desc"),//desciption
                 50, //duration in sec
                 {from:wasteOwner,value:0, gas: 3000000}
               )
@@ -251,7 +250,7 @@ contract('FarWaste', function(accounts) {
           return Extensions.expectedExceptionPromise(function () {
               return aFarWasteInstance.createWasteChase(
                 50,//price
-                "test desc",//desciption
+                web3.sha3("test desc"),//desciption
                 49, //duration in sec
                 {from:wasteOwner,value:0, gas: 3000000}
               )
@@ -263,7 +262,7 @@ contract('FarWaste', function(accounts) {
           return Extensions.expectedExceptionPromise(function () {
               return aFarWasteInstance.createWasteChase(
                 50,//price
-                "test desc",//desciption
+                web3.sha3("test desc"),//desciption
                 101, //duration in sec
                 {from:wasteOwner,value:0, gas: 3000000}
               )
@@ -274,7 +273,7 @@ contract('FarWaste', function(accounts) {
       it("it shoud failed to create createWasteChase after change minWasteChaseDuration limit from 50 to 51", function() {
           return aFarWasteInstance.createWasteChase(
                             50,//price
-                            "test desc",//desciption
+                            web3.sha3("test desc"),//desciption
                             50, //duration in sec.
                             {from:wasteOwner,value:0, gas: 3000000})
             .then(txMined => assert.isBelow(txMined.receipt.gasUsed, 3000000, "should not use all gas"))
@@ -284,7 +283,7 @@ contract('FarWaste', function(accounts) {
                 return Extensions.expectedExceptionPromise(function () {
                   return aFarWasteInstance.createWasteChase(
                                     50,//price
-                                    "test desc",//desciption
+                                    web3.sha3("test desc"),//desciption
                                     50, //duration in sec.
                                     {from:wasteOwner,value:0, gas: 3000000}
                                   )
@@ -296,7 +295,7 @@ contract('FarWaste', function(accounts) {
       it("it shoud failed to create createWasteChase after change minChasePrice limit from 50 to 51", function() {
           return aFarWasteInstance.createWasteChase(
                             50,//price
-                            "test desc",//desciption
+                            web3.sha3("test desc"),//desciption
                             50, //duration in sec.
                             {from:wasteOwner,value:0, gas: 3000000})
             .then(txMined => assert.isBelow(txMined.receipt.gasUsed, 3000000, "should not use all gas"))
@@ -306,7 +305,7 @@ contract('FarWaste', function(accounts) {
                 return Extensions.expectedExceptionPromise(function () {
                   return aFarWasteInstance.createWasteChase(
                                     50,//price
-                                    "test desc",//desciption
+                                    web3.sha3("test desc"),//desciption
                                     50, //duration in sec.
                                     {from:wasteOwner,value:0, gas: 3000000}
                                   )
@@ -318,7 +317,7 @@ contract('FarWaste', function(accounts) {
       it("it shoud failed to create createWasteChase after change maxWasteChaseDuration limit from 100 to 99", function() {
           return aFarWasteInstance.createWasteChase(
                             50,//price
-                            "test desc",//desciption
+                            web3.sha3("test desc"),//desciption
                             100, //duration in sec.
                             {from:wasteOwner,value:0, gas: 3000000})
             .then(txMined => assert.isBelow(txMined.receipt.gasUsed, 3000000, "should not use all gas"))
@@ -328,7 +327,7 @@ contract('FarWaste', function(accounts) {
                 return Extensions.expectedExceptionPromise(function () {
                   return aFarWasteInstance.createWasteChase(
                                     50,//price
-                                    "test desc",//desciption
+                                    web3.sha3("test desc"),//desciption
                                     100, //duration in sec.
                                     {from:wasteOwner,value:0, gas: 3000000}
                                   )
@@ -341,7 +340,7 @@ contract('FarWaste', function(accounts) {
         it("it shoud failed to create createWasteChase after change maxChasePrice limit from 100 to 99", function() {
             return aFarWasteInstance.createWasteChase(
                               100,//price
-                              "test desc",//desciption
+                              web3.sha3("test desc"),//desciption
                               50, //duration in sec.
                               {from:wasteOwner,value:0, gas: 3000000})
               .then(txMined => assert.isBelow(txMined.receipt.gasUsed, 3000000, "should not use all gas"))
@@ -351,7 +350,7 @@ contract('FarWaste', function(accounts) {
                   return Extensions.expectedExceptionPromise(function () {
                     return aFarWasteInstance.createWasteChase(
                                       100,//price
-                                      "test desc",//desciption
+                                      web3.sha3("test desc"),//desciption
                                       50, //duration in sec.
                                       {from:wasteOwner,value:0, gas: 3000000}
                                     )
@@ -376,13 +375,11 @@ contract('FarWaste', function(accounts) {
             web3.eth.getBalancePromise(wasteOwner),
             FarWaste.new(50,100,5,100,2)
           ])
-          .then(result => {
-            sheriffInitialBalance=result[0];
-            wasteOwnerInitialBalance=result[1];
-            aFarWasteInstance =result[2];
+          .then(results => {
+            [sheriffInitialBalance,wasteOwnerInitialBalance,aFarWasteInstance]=results;
             return aFarWasteInstance.createWasteChase(
                               50,//price
-                              "test desc",//desciption
+                              web3.sha3("test desc"),//desciption
                               5, //duration in sec.
                               {from:wasteOwner,value:0, gas: 3000000});
           })
@@ -413,11 +410,12 @@ contract('FarWaste', function(accounts) {
             }
           )
           .then(aWasteChase => {
-                assert.strictEqual(aWasteChase[0].toNumber(), 1, "aWasteChase WasteChaseStatus is 1 = CHASED");
-                assert.strictEqual(aWasteChase[1].toNumber(), 50, "aWasteChase chasePrice is 50");
-                assert.strictEqual(aWasteChase[3].toString(), "test desc", "aWasteChase chaseDescription is test desc");
-                assert.strictEqual(aWasteChase[4],wasteHunter,"aWasteChase wasteHunter is wasteHunter");
-                assert.strictEqual(aWasteChase[5], wasteOwner, "aWasteChase wasteOwner is wasteOwner");
+                [status,price,expirationTime,descriptionHash,hunter,owner]=aWasteChase;
+                assert.strictEqual(status.toNumber(), 2, "aWasteChase WasteChaseStatus is 2 = CHASED");
+                assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice is 50");
+                assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
+                assert.strictEqual(hunter,wasteHunter,"aWasteChase wasteHunter is wasteHunter");
+                assert.strictEqual(owner, wasteOwner, "aWasteChase wasteOwner is wasteOwner");
                 //chaseAWaste twice should failed
                 return Extensions.expectedExceptionPromise(function () {
                   return aFarWasteInstance.chaseAWaste(0,{from:wasteHunter, value:50, gas: 3000000})
@@ -448,13 +446,6 @@ contract('FarWaste', function(accounts) {
         });
 
 
-        it("it should failed to chase your own chaseWaste", function() {
-          return Extensions.expectedExceptionPromise(function () {
-            return aFarWasteInstance.chaseAWaste(0,{from:wasteOwner, value:50, gas: 3000000})
-                          },
-                          3000000);
-        });
-
         it("it should failed to chase an expired chaseWaste", function() {
           Extensions.sleep(8000);
           return Extensions.expectedExceptionPromise(function () {
@@ -479,13 +470,11 @@ contract('FarWaste', function(accounts) {
                   web3.eth.getBalancePromise(wasteOwner),
                   FarWaste.new(50,100,5,100,2)
                 ])
-                .then(result => {
-                  sheriffInitialBalance=result[0];
-                  wasteOwnerInitialBalance=result[1];
-                  aFarWasteInstance =result[2];
+                .then(results => {
+                  [sheriffInitialBalance,wasteOwnerInitialBalance,aFarWasteInstance]=results;
                   return aFarWasteInstance.createWasteChase(
                                     50,//price
-                                    "test desc",//desciption
+                                    web3.sha3("test desc"),//desciption
                                     5, //duration in sec.
                                     {from:wasteOwner,value:0, gas: 3000000});
                 })
@@ -508,11 +497,12 @@ contract('FarWaste', function(accounts) {
                   }
                 )
                 .then(aWasteChase => {
-                      assert.strictEqual(aWasteChase[0].toNumber(), 1, "aWasteChase WasteChaseStatus is 1 = CHASED");
-                      assert.strictEqual(aWasteChase[1].toNumber(), 50, "aWasteChase chasePrice is 50");
-                      assert.strictEqual(aWasteChase[3].toString(), "test desc", "aWasteChase chaseDescription is test desc");
-                      assert.strictEqual(aWasteChase[4],wasteHunter,"aWasteChase wasteHunter is wasteHunter");
-                      assert.strictEqual(aWasteChase[5],wasteOwner, "aWasteChase wasteOwner is wasteOwner");
+                      [status,price,expirationTime,descriptionHash,hunter,owner]=aWasteChase;
+                      assert.strictEqual(status.toNumber(), 2, "aWasteChase WasteChaseStatus is 2 = CHASED");
+                      assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice is 50");
+                      assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
+                      assert.strictEqual(hunter,wasteHunter,"aWasteChase wasteHunter is wasteHunter");
+                      assert.strictEqual(owner,wasteOwner, "aWasteChase wasteOwner is wasteOwner");
                 });
             });
 
@@ -522,9 +512,9 @@ contract('FarWaste', function(accounts) {
             });
 
             it("shootAWaste is call by the wasteOwner and need a signed msg (meet each other and send signMessage via flashcode ? use uport for identity ?) from wasteHunter.", function() {
-               return aFarWasteInstance.getMyWasteChasesCount.call({from:wasteOwner, gas: 3000000})
-               .then(getMyWasteChasesCount =>{
-                 assert.strictEqual(getMyWasteChasesCount.toNumber(), 1, "wasteOwner has 1 waste chase");
+               return aFarWasteInstance.getMyProcessingWasteChasesCount.call({from:wasteOwner, gas: 3000000})
+               .then(getMyProcessingWasteChasesCount =>{
+                 assert.strictEqual(getMyProcessingWasteChasesCount.toNumber(), 1, "wasteOwner has 1 waste chase");
                  return Extensions.signMessage(wasteHunter,"0");
                 })
                 .then(sig => {
@@ -535,15 +525,21 @@ contract('FarWaste', function(accounts) {
                    return aFarWasteInstance.getWasteChase(0);
                 })
                 .then(aWasteChase => {
-                      assert.strictEqual(aWasteChase[0].toNumber(), 2, "aWasteChase WasteChaseStatus is 2 = SHOOT");
-                      assert.strictEqual(aWasteChase[1].toNumber(), 50, "aWasteChase chasePrice was 50");
-                      assert.strictEqual(aWasteChase[3].toString(), "test desc", "aWasteChase chaseDescription is test desc");
-                      assert.strictEqual(aWasteChase[4],wasteHunter,"aWasteChase wasteHunter was wasteHunter");
-                      assert.strictEqual(aWasteChase[5],wasteHunter, "aWasteChase new wasteOwner is wasteHunter");
-                      return aFarWasteInstance.getMyWasteChasesCount.call({from:wasteOwner, gas: 3000000});
+                      [status,price,expirationTime,descriptionHash,hunter,owner]=aWasteChase;
+                      assert.strictEqual(status.toNumber(), 3, "aWasteChase WasteChaseStatus is 3 = SHOOT");
+                      assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice was 50");
+                      assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
+                      assert.strictEqual(hunter,wasteHunter,"aWasteChase wasteHunter was wasteHunter");
+                      assert.strictEqual(owner,wasteHunter, "aWasteChase new wasteOwner is wasteHunter");
+                      return  Promise.all([
+                      aFarWasteInstance.getMyProcessingWasteChasesCount.call({from:wasteOwner, gas: 3000000}),
+                      aFarWasteInstance.getMyCompletedWasteChasesCount.call({from:wasteHunter, gas: 3000000})
+                      ]);
                 })
-                .then(getMyWasteChasesCount =>{
-                      assert.strictEqual(getMyWasteChasesCount.toNumber(), 0, "wasteOwner has now 0 waste chase");
+                .then(chasesCount =>{
+                      [getMyProcessingWasteChasesCount, getMyCompletedWasteChasesCount]=chasesCount;
+                      assert.strictEqual(getMyProcessingWasteChasesCount.toNumber(), 0, "wasteOwner has now 0 waste chase");
+                      assert.strictEqual(getMyCompletedWasteChasesCount.toNumber(), 1, "wasteHunter has completed 1 waste chase!");
                       return web3.eth.getBalancePromise(wasteOwner);
                 })
                 .then(balance => {
@@ -560,11 +556,9 @@ contract('FarWaste', function(accounts) {
                    ]);
                  }
                )
-               .then( currentBalancesAndTx  => {
-                    wasteOwnerCurrentBalance = currentBalancesAndTx[0];
-                    contractCurrentBalance = currentBalancesAndTx[1];
-                    gazUsedCost= currentBalancesAndTx[2];
-                    initialBalanceMinusGazUsed=new BigNumber(wasteOwnerInitialBalance.minus(gazUsedCost));
+               .then( results  => {
+                    [wasteOwnerCurrentBalance,contractCurrentBalance,gazUsedCost]=results;
+                    initialBalanceMinusGazUsed=web3.toBigNumber(wasteOwnerInitialBalance.minus(gazUsedCost));
                     assert.strictEqual(wasteOwnerCurrentBalance.minus(initialBalanceMinusGazUsed).toString(10), '50' , "wasteOwner has withdrow his 50 payment");
                     assert.strictEqual(contractCurrentBalance.toString(10), '0', "nothing left in the contract after this withdrow");
                   }
@@ -639,13 +633,11 @@ contract('FarWaste', function(accounts) {
                       web3.eth.getBalancePromise(wasteOwner),
                       FarWaste.new(50,100,5,100,2)
                     ])
-                    .then(result => {
-                      sheriffInitialBalance=result[0];
-                      wasteOwnerInitialBalance=result[1];
-                      aFarWasteInstance =result[2];
+                    .then(results => {
+                      [sheriffInitialBalance,wasteOwnerInitialBalance,aFarWasteInstance]=results;
                       return aFarWasteInstance.createWasteChase(
                                         50,//price
-                                        "test desc",//desciption
+                                        web3.sha3("test desc"),//desciption
                                         5, //duration in sec.
                                         {from:wasteOwner,value:0, gas: 3000000});
                     })
@@ -668,11 +660,12 @@ contract('FarWaste', function(accounts) {
                       }
                     )
                     .then(aWasteChase => {
-                          assert.strictEqual(aWasteChase[0].toNumber(), 1, "aWasteChase WasteChaseStatus is 1 = CHASED");
-                          assert.strictEqual(aWasteChase[1].toNumber(), 50, "aWasteChase chasePrice is 50");
-                          assert.strictEqual(aWasteChase[3].toString(), "test desc", "aWasteChase chaseDescription is test desc");
-                          assert.strictEqual(aWasteChase[4],wasteHunter,"aWasteChase wasteHunter is wasteHunter");
-                          assert.strictEqual(aWasteChase[5],wasteOwner, "aWasteChase wasteOwner is wasteOwner");
+                          [status,price,expirationTime,descriptionHash,hunter,owner]=aWasteChase;
+                          assert.strictEqual(status.toNumber(), 2, "aWasteChase WasteChaseStatus is 2 = CHASED");
+                          assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice is 50");
+                          assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
+                          assert.strictEqual(hunter,wasteHunter,"aWasteChase wasteHunter is wasteHunter");
+                          assert.strictEqual(owner,wasteOwner, "aWasteChase wasteOwner is wasteOwner");
                     });
                 });
 
@@ -683,9 +676,9 @@ contract('FarWaste', function(accounts) {
 
 
                 it("cancelAChasedWaste is call by the wastehunter to cancel his waste chase ", function() {
-                   return aFarWasteInstance.getMyWasteChasesCount.call({from:wasteOwner, gas: 3000000})
-                   .then(getMyWasteChasesCount =>{
-                     assert.strictEqual(getMyWasteChasesCount.toNumber(), 1, "wasteOwner has 1 waste chase");
+                   return aFarWasteInstance.getMyProcessingWasteChasesCount.call({from:wasteOwner, gas: 3000000})
+                   .then(getMyProcessingWasteChasesCount =>{
+                     assert.strictEqual(getMyProcessingWasteChasesCount.toNumber(), 1, "wasteOwner has 1 waste chase");
                        return aFarWasteInstance.cancelAChasedWaste(0,{from:wasteHunter, gas: 3000000});
                     })
                     .then(txMined => {
@@ -693,16 +686,17 @@ contract('FarWaste', function(accounts) {
                        return aFarWasteInstance.getWasteChase(0);
                     })
                     .then(aWasteChase => {
-                          assert.strictEqual(aWasteChase[0].toNumber(), 0, "aWasteChase WasteChaseStatus return to 0 = CREATED");
-                          assert.strictEqual(aWasteChase[1].toNumber(), 50, "aWasteChase chasePrice was 50");
-                          assert.strictEqual(aWasteChase[3].toString(), "test desc", "aWasteChase chaseDescription is test desc");
-                          var aWasteChaseWasteHunter = web3.toBigNumber(aWasteChase[4], 16);
+                          [status,price,expirationTime,descriptionHash,hunter,owner]=aWasteChase;
+                          assert.strictEqual(status.toNumber(), 1, "aWasteChase WasteChaseStatus return to 1 = CREATED");
+                          assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice was 50");
+                          assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
+                          var aWasteChaseWasteHunter = web3.toBigNumber(hunter, 16);
                           assert.isTrue(aWasteChaseWasteHunter.equals(0) ,"aWasteChase wasteHunter  has cancel address not set.free to new wasteHunter");
-                          assert.strictEqual(aWasteChase[5],wasteOwner, "aWasteChase wasteOwner is still  wasteOwner");
-                          return aFarWasteInstance.getMyWasteChasesCount.call({from:wasteOwner, gas: 3000000});
+                          assert.strictEqual(owner,wasteOwner, "aWasteChase wasteOwner is still  wasteOwner");
+                          return aFarWasteInstance.getMyProcessingWasteChasesCount.call({from:wasteOwner, gas: 3000000});
                     })
-                    .then(getMyWasteChasesCount =>{
-                          assert.strictEqual(getMyWasteChasesCount.toNumber(), 1, "wasteOwner has still 1 waste chase");
+                    .then(getMyProcessingWasteChasesCount =>{
+                          assert.strictEqual(getMyProcessingWasteChasesCount.toNumber(), 1, "wasteOwner has still 1 waste chase");
                           return web3.eth.getBalancePromise(wasteHunter);
                     })
                     .then(balance => {
@@ -719,11 +713,9 @@ contract('FarWaste', function(accounts) {
                        ]);
                      }
                    )
-                   .then( currentBalancesAndTx  => {
-                        wasteHunterCurrentBalance = currentBalancesAndTx[0];
-                        contractCurrentBalance = currentBalancesAndTx[1];
-                        gazUsedCost= currentBalancesAndTx[2];
-                        initialBalanceMinusGazUsed=new BigNumber(wasteHunterInitialBalance.minus(gazUsedCost));
+                   .then( results  => {
+                        [wasteHunterCurrentBalance,contractCurrentBalance,gazUsedCost]=results;
+                        initialBalanceMinusGazUsed=web3.toBigNumber(wasteHunterInitialBalance.minus(gazUsedCost));
                         assert.strictEqual(wasteHunterCurrentBalance.minus(initialBalanceMinusGazUsed).toString(10), '50' , "wasteHunter has withdrow his 50 payment");
                         assert.strictEqual(contractCurrentBalance.toString(10), '0', "nothing left in the contract after this withdrow");
                       }
@@ -774,13 +766,11 @@ contract('FarWaste', function(accounts) {
                       web3.eth.getBalancePromise(wasteOwner),
                       FarWaste.new(50,100,5,100,2)
                     ])
-                    .then(result => {
-                      sheriffInitialBalance=result[0];
-                      wasteOwnerInitialBalance=result[1];
-                      aFarWasteInstance =result[2];
+                    .then(results => {
+                      [sheriffInitialBalance,wasteOwnerInitialBalance,aFarWasteInstance]=results;
                       return aFarWasteInstance.createWasteChase(
                                         50,//price
-                                        "test desc",//desciption
+                                        web3.sha3("test desc"),//desciption
                                         5, //duration in sec.
                                         {from:wasteOwner,value:0, gas: 3000000});
                     })
@@ -803,11 +793,12 @@ contract('FarWaste', function(accounts) {
                       }
                     )
                     .then(aWasteChase => {
-                          assert.strictEqual(aWasteChase[0].toNumber(), 1, "aWasteChase WasteChaseStatus is 1 = CHASED");
-                          assert.strictEqual(aWasteChase[1].toNumber(), 50, "aWasteChase chasePrice is 50");
-                          assert.strictEqual(aWasteChase[3].toString(), "test desc", "aWasteChase chaseDescription is test desc");
-                          assert.strictEqual(aWasteChase[4],wasteHunter,"aWasteChase wasteHunter is wasteHunter");
-                          assert.strictEqual(aWasteChase[5],wasteOwner, "aWasteChase wasteOwner is wasteOwner");
+                          [status,price,expirationTime,descriptionHash,hunter,owner]=aWasteChase;
+                          assert.strictEqual(status.toNumber(), 2, "aWasteChase WasteChaseStatus is 2 = CHASED");
+                          assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice is 50");
+                          assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
+                          assert.strictEqual(hunter,wasteHunter,"aWasteChase wasteHunter is wasteHunter");
+                          assert.strictEqual(owner,wasteOwner, "aWasteChase wasteOwner is wasteOwner");
                     });
                 });
 
@@ -817,9 +808,9 @@ contract('FarWaste', function(accounts) {
                 });
 
                 it("cancelACreatedWasteChase function on already chased waste", function() {
-                   return aFarWasteInstance.getMyWasteChasesCount.call({from:wasteOwner, gas: 3000000})
-                   .then(getMyWasteChasesCount =>{
-                     assert.strictEqual(getMyWasteChasesCount.toNumber(), 1, "wasteOwner has 1 waste chase");
+                   return aFarWasteInstance.getMyProcessingWasteChasesCount.call({from:wasteOwner, gas: 3000000})
+                   .then(getMyProcessingWasteChasesCount =>{
+                     assert.strictEqual(getMyProcessingWasteChasesCount.toNumber(), 1, "wasteOwner has 1 waste chase");
                        return aFarWasteInstance.cancelACreatedWasteChase(0,{from:wasteOwner, gas: 3000000});
                     })
                     .then(txMined => {
@@ -827,16 +818,17 @@ contract('FarWaste', function(accounts) {
                        return aFarWasteInstance.getWasteChase(0);
                     })
                     .then(aWasteChase => {
-                          assert.strictEqual(aWasteChase[0].toNumber(), 3, "aWasteChase WasteChaseStatus return to 3 = CANCEL");
-                          assert.strictEqual(aWasteChase[1].toNumber(), 50, "aWasteChase chasePrice was 50");
-                          assert.strictEqual(aWasteChase[3].toString(), "test desc", "aWasteChase chaseDescription is test desc");
-                          var aWasteChaseWasteHunter = web3.toBigNumber(aWasteChase[4], 16);
+                          [status,price,expirationTime,descriptionHash,hunter,owner]=aWasteChase;
+                          assert.strictEqual(status.toNumber(), 4, "aWasteChase WasteChaseStatus return to 4 = CANCEL");
+                          assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice was 50");
+                          assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
+                          var aWasteChaseWasteHunter = web3.toBigNumber(hunter, 16);
                           assert.isTrue(aWasteChaseWasteHunter.equals(0) ,"aWasteChase wasteHunter  has cancel address not set.free to new wasteHunter");
-                          assert.strictEqual(aWasteChase[5],wasteOwner, "aWasteChase wasteOwner is still  wasteOwner");
-                          return aFarWasteInstance.getMyWasteChasesCount.call({from:wasteOwner, gas: 3000000});
+                          assert.strictEqual(owner,wasteOwner, "aWasteChase wasteOwner is still  wasteOwner");
+                          return aFarWasteInstance.getMyProcessingWasteChasesCount.call({from:wasteOwner, gas: 3000000});
                     })
-                    .then(getMyWasteChasesCount =>{
-                          assert.strictEqual(getMyWasteChasesCount.toNumber(), 0, "wasteOwner has no waste chase");
+                    .then(getMyProcessingWasteChasesCount =>{
+                          assert.strictEqual(getMyProcessingWasteChasesCount.toNumber(), 0, "wasteOwner has no waste chase");
                           return web3.eth.getBalancePromise(wasteHunter);
                     })
                     .then(balance => {
@@ -853,11 +845,9 @@ contract('FarWaste', function(accounts) {
                        ]);
                      }
                    )
-                   .then( currentBalancesAndTx  => {
-                        wasteHunterCurrentBalance = currentBalancesAndTx[0];
-                        contractCurrentBalance = currentBalancesAndTx[1];
-                        gazUsedCost= currentBalancesAndTx[2];
-                        initialBalanceMinusGazUsed=new BigNumber(wasteHunterInitialBalance.minus(gazUsedCost));
+                   .then( results  => {
+                        [wasteHunterCurrentBalance,contractCurrentBalance,gazUsedCost]=results;
+                        initialBalanceMinusGazUsed=web3.toBigNumber(wasteHunterInitialBalance.minus(gazUsedCost));
                         assert.strictEqual(wasteHunterCurrentBalance.minus(initialBalanceMinusGazUsed).toString(10), '50' , "wasteHunter has withdrow his 50 payment");
                         assert.strictEqual(contractCurrentBalance.toString(10), '0', "nothing left in the contract after this withdrow");
                       }
@@ -911,13 +901,11 @@ contract('FarWaste', function(accounts) {
                 web3.eth.getBalancePromise(wasteOwner),
                 FarWaste.new(50,100,5,100,2)
               ])
-              .then(result => {
-                sheriffInitialBalance=result[0];
-                wasteOwnerInitialBalance=result[1];
-                aFarWasteInstance =result[2];
+              .then(results => {
+                [sheriffInitialBalance,wasteOwnerInitialBalance,aFarWasteInstance]=results;
                 return aFarWasteInstance.createWasteChase(
                                   50,//price
-                                  "test desc",//desciption
+                                  web3.sha3("test desc"),//desciption
                                   5, //duration in sec.
                                   {from:wasteOwner,value:0, gas: 3000000});
               })
@@ -938,9 +926,9 @@ contract('FarWaste', function(accounts) {
           });
 
           it("cancelACreatedWasteChase function ", function() {
-             return aFarWasteInstance.getMyWasteChasesCount.call({from:wasteOwner, gas: 3000000})
-             .then(getMyWasteChasesCount =>{
-               assert.strictEqual(getMyWasteChasesCount.toNumber(), 1, "wasteOwner has 1 waste chase");
+             return aFarWasteInstance.getMyProcessingWasteChasesCount.call({from:wasteOwner, gas: 3000000})
+             .then(getMyProcessingWasteChasesCount =>{
+               assert.strictEqual(getMyProcessingWasteChasesCount.toNumber(), 1, "wasteOwner has 1 waste chase");
                  return aFarWasteInstance.cancelACreatedWasteChase(0,{from:wasteOwner, gas: 3000000});
               })
               .then(txMined => {
@@ -948,16 +936,17 @@ contract('FarWaste', function(accounts) {
                  return aFarWasteInstance.getWasteChase(0);
               })
               .then(aWasteChase => {
-                    assert.strictEqual(aWasteChase[0].toNumber(), 3, "aWasteChase WasteChaseStatus return to 3 = CANCEL");
-                    assert.strictEqual(aWasteChase[1].toNumber(), 50, "aWasteChase chasePrice was 50");
-                    assert.strictEqual(aWasteChase[3].toString(), "test desc", "aWasteChase chaseDescription is test desc");
-                    var aWasteChaseWasteHunter = web3.toBigNumber(aWasteChase[4], 16);
+                    [status,price,expirationTime,descriptionHash,hunter,owner]=aWasteChase;
+                    assert.strictEqual(status.toNumber(), 4, "aWasteChase WasteChaseStatus return to 4 = CANCEL");
+                    assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice was 50");
+                    assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
+                    var aWasteChaseWasteHunter = web3.toBigNumber(hunter, 16);
                     assert.isTrue(aWasteChaseWasteHunter.equals(0) ,"aWasteChase wasteHunter  has cancel address not set.free to new wasteHunter");
-                    assert.strictEqual(aWasteChase[5],wasteOwner, "aWasteChase wasteOwner is still  wasteOwner");
-                    return aFarWasteInstance.getMyWasteChasesCount.call({from:wasteOwner, gas: 3000000});
+                    assert.strictEqual(owner,wasteOwner, "aWasteChase wasteOwner is still  wasteOwner");
+                    return aFarWasteInstance.getMyProcessingWasteChasesCount.call({from:wasteOwner, gas: 3000000});
               })
-              .then(getMyWasteChasesCount =>{
-                    assert.strictEqual(getMyWasteChasesCount.toNumber(), 0, "wasteOwner has no waste chase");
+              .then(getMyProcessingWasteChasesCount =>{
+                    assert.strictEqual(getMyProcessingWasteChasesCount.toNumber(), 0, "wasteOwner has no waste chase");
                     return Extensions.expectedExceptionPromise(function () {
                       return aFarWasteInstance.withdrawPayments({from:wasteHunter, gas: 3000000});//nothing to withdrow
                                     },
@@ -1011,13 +1000,11 @@ contract('FarWaste', function(accounts) {
           web3.eth.getBalancePromise(wasteOwner),
           FarWaste.new(50,100,5,100,2)
         ])
-        .then(result => {
-          sheriffInitialBalance=result[0];
-          wasteOwnerInitialBalance=result[1];
-          aFarWasteInstance =result[2];
+        .then(results => {
+          [sheriffInitialBalance,wasteOwnerInitialBalance,aFarWasteInstance]=results;
           return aFarWasteInstance.createWasteChase(
                             50,//price
-                            "test desc",//desciption
+                            web3.sha3("test desc"),//desciption
                             5, //duration in sec.
                             {from:wasteOwner,value:0, gas: 3000000});
         })
@@ -1040,11 +1027,12 @@ contract('FarWaste', function(accounts) {
           }
         )
         .then(aWasteChase => {
-              assert.strictEqual(aWasteChase[0].toNumber(), 1, "aWasteChase WasteChaseStatus is 1 = CHASED");
-              assert.strictEqual(aWasteChase[1].toNumber(), 50, "aWasteChase chasePrice is 50");
-              assert.strictEqual(aWasteChase[3].toString(), "test desc", "aWasteChase chaseDescription is test desc");
-              assert.strictEqual(aWasteChase[4],wasteHunter,"aWasteChase wasteHunter is wasteHunter");
-              assert.strictEqual(aWasteChase[5],wasteOwner, "aWasteChase wasteOwner is wasteOwner");
+              [status,price,expirationTime,descriptionHash,hunter,owner]=aWasteChase;
+              assert.strictEqual(status.toNumber(), 2, "aWasteChase WasteChaseStatus is 2 = CHASED");
+              assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice is 50");
+              assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
+              assert.strictEqual(hunter,wasteHunter,"aWasteChase wasteHunter is wasteHunter");
+              assert.strictEqual(owner,wasteOwner, "aWasteChase wasteOwner is wasteOwner");
         });
     });
 
@@ -1054,9 +1042,9 @@ contract('FarWaste', function(accounts) {
     });
 
     it("terminateAnExpiredWasteChase function on a chased waste but expired ", function() {
-       return aFarWasteInstance.getMyWasteChasesCount.call({from:wasteOwner, gas: 3000000})
-       .then(getMyWasteChasesCount =>{
-         assert.strictEqual(getMyWasteChasesCount.toNumber(), 1, "wasteOwner has 1 waste chase");
+       return aFarWasteInstance.getMyProcessingWasteChasesCount.call({from:wasteOwner, gas: 3000000})
+       .then(getMyProcessingWasteChasesCount =>{
+         assert.strictEqual(getMyProcessingWasteChasesCount.toNumber(), 1, "wasteOwner has 1 waste chase");
            Extensions.sleep(8000);
            return aFarWasteInstance.terminateAnExpiredWasteChase(0,{from:wasteOwner, gas: 3000000});
         })
@@ -1065,15 +1053,16 @@ contract('FarWaste', function(accounts) {
            return aFarWasteInstance.getWasteChase(0);
         })
         .then(aWasteChase => {
-              assert.strictEqual(aWasteChase[0].toNumber(), 4, "aWasteChase WasteChaseStatus return to 4 = EXPIRED");
-              assert.strictEqual(aWasteChase[1].toNumber(), 50, "aWasteChase chasePrice was 50");
-              assert.strictEqual(aWasteChase[3].toString(), "test desc", "aWasteChase chaseDescription is test desc");
-              assert.strictEqual(aWasteChase[4],wasteHunter ,"wasteHunter was here but do not take the product before expiration");
-              assert.strictEqual(aWasteChase[5],wasteOwner, "aWasteChase wasteOwner is still wasteOwner but on an expired product ...");
-              return aFarWasteInstance.getMyWasteChasesCount.call({from:wasteOwner, gas: 3000000});
+              [status,price,expirationTime,descriptionHash,hunter,owner]=aWasteChase;
+              assert.strictEqual(status.toNumber(), 5, "aWasteChase WasteChaseStatus return to 5 = EXPIRED");
+              assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice was 50");
+              assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
+              assert.strictEqual(hunter,wasteHunter ,"wasteHunter was here but do not take the product before expiration");
+              assert.strictEqual(owner,wasteOwner, "aWasteChase wasteOwner is still wasteOwner but on an expired product ...");
+              return aFarWasteInstance.getMyProcessingWasteChasesCount.call({from:wasteOwner, gas: 3000000});
         })
-        .then(getMyWasteChasesCount =>{
-              assert.strictEqual(getMyWasteChasesCount.toNumber(), 0, "wasteOwner has no waste chase");
+        .then(getMyProcessingWasteChasesCount =>{
+              assert.strictEqual(getMyProcessingWasteChasesCount.toNumber(), 0, "wasteOwner has no waste chase");
               return web3.eth.getBalancePromise(wasteOwner);
         })
         .then(balance => {
@@ -1090,11 +1079,9 @@ contract('FarWaste', function(accounts) {
            ]);
          }
        )
-       .then( currentBalancesAndTx  => {
-            wasteOwnerCurrentBalance = currentBalancesAndTx[0];
-            contractCurrentBalance = currentBalancesAndTx[1];
-            gazUsedCost= currentBalancesAndTx[2];
-            initialBalanceMinusGazUsed=new BigNumber(wasteOwnerInitialBalance.minus(gazUsedCost));
+       .then( results  => {
+            [wasteOwnerCurrentBalance,contractCurrentBalance,gazUsedCost]=results;
+            initialBalanceMinusGazUsed=web3.toBigNumber(wasteOwnerInitialBalance.minus(gazUsedCost));
             assert.strictEqual(wasteOwnerCurrentBalance.minus(initialBalanceMinusGazUsed).toString(10), '50' , "wasteOwner has withdrow 50 payment");
             assert.strictEqual(contractCurrentBalance.toString(10), '0', "nothing left in the contract after this withdrow");
           }
@@ -1143,13 +1130,11 @@ describe("Test terminateAnExpiredWasteChase on a created waste and then expired 
         web3.eth.getBalancePromise(wasteOwner),
         FarWaste.new(50,100,5,100,2)
       ])
-      .then(result => {
-        sheriffInitialBalance=result[0];
-        wasteOwnerInitialBalance=result[1];
-        aFarWasteInstance =result[2];
+      .then(results => {
+        [sheriffInitialBalance,wasteOwnerInitialBalance,aFarWasteInstance]=results;
         return aFarWasteInstance.createWasteChase(
                           50,//price
-                          "test desc",//desciption
+                          web3.sha3("test desc"),//desciption
                           5, //duration in sec.
                           {from:wasteOwner,value:0, gas: 3000000});
       })
@@ -1170,9 +1155,9 @@ describe("Test terminateAnExpiredWasteChase on a created waste and then expired 
   });
 
   it("terminateAnExpiredWasteChase function on a created waste but expired ", function() {
-     return aFarWasteInstance.getMyWasteChasesCount.call({from:wasteOwner, gas: 3000000})
-     .then(getMyWasteChasesCount =>{
-       assert.strictEqual(getMyWasteChasesCount.toNumber(), 1, "wasteOwner has 1 waste chase");
+     return aFarWasteInstance.getMyProcessingWasteChasesCount.call({from:wasteOwner, gas: 3000000})
+     .then(getMyProcessingWasteChasesCount =>{
+       assert.strictEqual(getMyProcessingWasteChasesCount.toNumber(), 1, "wasteOwner has 1 waste chase");
          Extensions.sleep(8000);
          return aFarWasteInstance.terminateAnExpiredWasteChase(0,{from:wasteOwner, gas: 3000000});
       })
@@ -1181,16 +1166,17 @@ describe("Test terminateAnExpiredWasteChase on a created waste and then expired 
          return aFarWasteInstance.getWasteChase(0);
       })
       .then(aWasteChase => {
-            assert.strictEqual(aWasteChase[0].toNumber(), 4, "aWasteChase WasteChaseStatus return to 4 = EXPIRED");
-            assert.strictEqual(aWasteChase[1].toNumber(), 50, "aWasteChase chasePrice was 50");
-            assert.strictEqual(aWasteChase[3].toString(), "test desc", "aWasteChase chaseDescription is test desc");
-            var aWasteChaseWasteHunter = web3.toBigNumber(aWasteChase[4], 16);
+            [status,price,expirationTime,descriptionHash,hunter,owner]=aWasteChase;
+            assert.strictEqual(status.toNumber(), 5, "aWasteChase WasteChaseStatus return to 5 = EXPIRED");
+            assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice was 50");
+            assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
+            var aWasteChaseWasteHunter = web3.toBigNumber(hunter, 16);
             assert.isTrue(aWasteChaseWasteHunter.equals(0) ,"aWasteChase no wasteHunter");
-            assert.strictEqual(aWasteChase[5],wasteOwner, "aWasteChase wasteOwner is still wasteOwner but on an expired product ...");
-            return aFarWasteInstance.getMyWasteChasesCount.call({from:wasteOwner, gas: 3000000});
+            assert.strictEqual(owner,wasteOwner, "aWasteChase wasteOwner is still wasteOwner but on an expired product ...");
+            return aFarWasteInstance.getMyProcessingWasteChasesCount.call({from:wasteOwner, gas: 3000000});
       })
-      .then(getMyWasteChasesCount =>{
-        assert.strictEqual(getMyWasteChasesCount.toNumber(), 0, "wasteOwner has no waste chase");
+      .then(getMyProcessingWasteChasesCount =>{
+        assert.strictEqual(getMyProcessingWasteChasesCount.toNumber(), 0, "wasteOwner has no waste chase");
         //nothing to pull
         return Extensions.expectedExceptionPromise(function () {
           return aFarWasteInstance.withdrawPayments({from:wasteOwner, gas: 3000000});

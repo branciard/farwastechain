@@ -4,44 +4,49 @@ import "./PullPayment.sol";
 
 contract FarWaste is TownHall, PullPayment {
 
-  uint numWasteChases;
+  uint numChases;
 
-  enum WasteChaseStatus {CREATED,CHASED,SHOOT,CANCEL,EXPIRED}
+  enum ChaseStatus {NOTHING,CREATED,CHASED,SHOOT,CANCEL,EXPIRED}
 
   struct WasteChase {
-     WasteChaseStatus wasteChaseStatus;
-     uint chasePrice;
-     uint chaseExpiredTime;
-     string chaseDescription;
-     address wasteHunter;
-     address wasteOwner;
+     ChaseStatus status;
+     uint price;
+     uint expirationTime;
+     bytes32 descriptionHash;
+     address hunter;
+     address owner;
   }
 
-  mapping(uint => WasteChase) private wasteChases;
-  mapping(address => uint) private wasteChasesCountByUser;
-  uint[] private wasteChaseIds;
+  mapping(uint => WasteChase) private chases;
+  mapping(address => uint) private chasesProcessingByOwner;
+  mapping(address => uint) private chasesCompletedByHunter;
+  uint[] private chaseIds;
 
 
-  function getWasteChase(uint wasteChaseId)
+  function getWasteChase(uint chaseId)
   		constant
-  		returns (WasteChaseStatus wasteChaseStatus,uint chasePrice, uint chaseExpiredTime,string chaseDescription,address wasteHunter,address wasteOwner) {
-  		WasteChase aWasteChase = wasteChases[wasteChaseId];
+  		returns (ChaseStatus status,uint price, uint expirationTime,bytes32 descriptionHash,address hunter,address owner) {
+  		WasteChase aChase = chases[chaseId];
   		return (
-        aWasteChase.wasteChaseStatus,
-  			aWasteChase.chasePrice,
-  			aWasteChase.chaseExpiredTime,
-        aWasteChase.chaseDescription,
-        aWasteChase.wasteHunter,
-        aWasteChase.wasteOwner
+        aChase.status,
+  			aChase.price,
+  			aChase.expirationTime,
+        aChase.descriptionHash,
+        aChase.hunter,
+        aChase.owner
         );
   }
 
-  function getMyWasteChasesCount() constant returns (uint length) {
-    return wasteChasesCountByUser[msg.sender];
+  function getMyProcessingWasteChasesCount() constant returns (uint length) {
+    return chasesProcessingByOwner[msg.sender];
+  }
+
+  function getMyCompletedWasteChasesCount() constant returns (uint length) {
+    return chasesCompletedByHunter[msg.sender];
   }
 
   function getWasteChasesCount() constant returns (uint length) {
-    return wasteChaseIds.length;
+    return chaseIds.length;
   }
 
   function FarWaste(uint _minChasePrice,uint _maxChasePrice,uint _minWasteChaseDuration,uint _maxWasteChaseDuration,uint _maxWasteChaseByUser) {
@@ -57,26 +62,26 @@ contract FarWaste is TownHall, PullPayment {
    I- createWasteChase
    reputation +
   **/
-  function createWasteChase (uint _chasePrice, string _chaseDescription,uint _wasteChaseDuration) stopInEmergency returns (bool successful){
-    if(numWasteChases + 1 < numWasteChases) throw; //overflow ?
+  function createWasteChase (uint _chasePrice, bytes32 _chaseDescriptionHash,uint _wasteChaseDuration) stopInEmergency returns (bool successful){
+    if(numChases + 1 < numChases) throw; //overflow ?
     if(_wasteChaseDuration > maxWasteChaseDuration ) throw;
     if(_wasteChaseDuration < minWasteChaseDuration ) throw;
     if(_chasePrice < minChasePrice ) throw;
     if(_chasePrice > maxChasePrice ) throw;
-    if(wasteChasesCountByUser[msg.sender] >= maxWasteChaseByUser ) throw;
+    if(chasesProcessingByOwner[msg.sender] >= maxWasteChaseByUser ) throw;
 
-    uint wasteChaseId = numWasteChases++;
+    uint chaseId = numChases++;
 
-    wasteChases[wasteChaseId] = WasteChase({
-                                wasteChaseStatus:WasteChaseStatus.CREATED,
-                          			chasePrice:_chasePrice,
-                          			chaseExpiredTime: now+_wasteChaseDuration,
-                                chaseDescription:_chaseDescription,
-                                wasteHunter:address(0),
-                                wasteOwner:msg.sender
+    chases[chaseId] = WasteChase({
+                                status:ChaseStatus.CREATED,
+                          			price:_chasePrice,
+                          			expirationTime: now+_wasteChaseDuration,
+                                descriptionHash:_chaseDescriptionHash,
+                                hunter:address(0),
+                                owner:msg.sender
                           		  });
-    wasteChasesCountByUser[msg.sender] += 1;
-    wasteChaseIds.push(wasteChaseId);
+    chasesProcessingByOwner[msg.sender] += 1;
+    chaseIds.push(chaseId);
     return true;
   }
 
@@ -84,21 +89,19 @@ contract FarWaste is TownHall, PullPayment {
    II- chaseAWaste
    reputation +
   **/
-  function chaseAWaste(uint wasteChaseId) payable stopInEmergency returns (bool successful){
-     if (wasteChases[wasteChaseId].wasteChaseStatus != WasteChaseStatus.CREATED) throw;//nothing at this id wasteChaseId
+  function chaseAWaste(uint chaseId) payable stopInEmergency returns (bool successful){
+     if (chases[chaseId].status != ChaseStatus.CREATED) throw;//nothing at this id chaseId
 
-     if (wasteChases[wasteChaseId].wasteOwner == wasteChases[wasteChaseId].wasteHunter ) throw; //waste chase already done
+     if (chases[chaseId].owner == chases[chaseId].hunter ) throw; //waste chase already done
 
-     if (wasteChases[wasteChaseId].chasePrice != msg.value) throw;
+     if (chases[chaseId].price != msg.value) throw;
 
-     if (wasteChases[wasteChaseId].wasteOwner == msg.sender) throw;
+     if (chases[chaseId].hunter != address(0)) throw;//someone already chase this waste
 
-     if (wasteChases[wasteChaseId].wasteHunter != address(0)) throw;//someone already chase this waste
+     if (chases[chaseId].expirationTime < now) throw;
 
-     if (wasteChases[wasteChaseId].chaseExpiredTime < now) throw;
-
-     wasteChases[wasteChaseId].wasteHunter = msg.sender;
-     wasteChases[wasteChaseId].wasteChaseStatus= WasteChaseStatus.CHASED;
+     chases[chaseId].hunter = msg.sender;
+     chases[chaseId].status= ChaseStatus.CHASED;
 
      return true;
   }
@@ -107,25 +110,26 @@ contract FarWaste is TownHall, PullPayment {
    IIIa- shootAWaste
     reputation ++
   **/
-  function shootAWaste(uint wasteChaseId,string wasteChaseIdString, bytes32 hash, uint8 v, bytes32 r, bytes32 s) stopInEmergency returns (address successful){
-    if (wasteChases[wasteChaseId].wasteChaseStatus != WasteChaseStatus.CHASED) throw;//nothing at this id wasteChaseId
-    if (wasteChases[wasteChaseId].chasePrice > this.balance ) throw; //sanity check
-    if (wasteChases[wasteChaseId].wasteOwner != msg.sender) throw;
-    if (wasteChases[wasteChaseId].wasteOwner == address(0)) throw;
+  function shootAWaste(uint chaseId,string wasteChaseIdString, bytes32 hash, uint8 v, bytes32 r, bytes32 s) stopInEmergency returns (address successful){
+    if (chases[chaseId].status != ChaseStatus.CHASED) throw;//nothing at this id chaseId
+    if (chases[chaseId].price > this.balance ) throw; //sanity check
+    if (chases[chaseId].owner != msg.sender) throw;
+    if (chases[chaseId].owner == address(0)) throw;
     address recoverAddress =ecrecover(hash, v, r, s);
     if (recoverAddress == address(0)) throw;
-    if (wasteChases[wasteChaseId].wasteOwner == recoverAddress) throw;
-    if (wasteChases[wasteChaseId].wasteHunter != recoverAddress) throw;//it is not your chased waste
+    if (chases[chaseId].owner == recoverAddress) throw;
+    if (chases[chaseId].hunter != recoverAddress) throw;//it is not your chased waste
     if (sha3(wasteChaseIdString) != hash) throw;
     //check expired or not ?
 
-    address wasteOwnerToSent = wasteChases[wasteChaseId].wasteOwner;
+    address ownerToSent = chases[chaseId].owner;
     //change waste ownership
-    wasteChases[wasteChaseId].wasteOwner = recoverAddress;
-    wasteChasesCountByUser[msg.sender] -= 1;
-    wasteChases[wasteChaseId].wasteChaseStatus=WasteChaseStatus.SHOOT;
+    chases[chaseId].owner = recoverAddress;
+    chasesProcessingByOwner[msg.sender] -= 1;
+    chasesCompletedByHunter[recoverAddress] += 1;
+    chases[chaseId].status=ChaseStatus.SHOOT;
     //process async payement
-    asyncSend(wasteOwnerToSent,wasteChases[wasteChaseId].chasePrice);
+    asyncSend(ownerToSent,chases[chaseId].price);
 
     return recoverAddress;
   }
@@ -133,24 +137,24 @@ contract FarWaste is TownHall, PullPayment {
    IIIb- cancelAChasedWaste
    reputation -
   **/
-  function cancelAChasedWaste(uint wasteChaseId) stopInEmergency returns (bool successful){
-     if (wasteChases[wasteChaseId].wasteChaseStatus != WasteChaseStatus.CHASED) throw;//nothing at this id wasteChaseId
+  function cancelAChasedWaste(uint chaseId) stopInEmergency returns (bool successful){
+     if (chases[chaseId].status != ChaseStatus.CHASED) throw;//nothing at this id chaseId
 
-     if (wasteChases[wasteChaseId].wasteOwner == wasteChases[wasteChaseId].wasteHunter ) throw; //waste chase already done
+     if (chases[chaseId].owner == chases[chaseId].hunter ) throw; //waste chase already done
 
-     if (wasteChases[wasteChaseId].wasteOwner == msg.sender) throw;
+     if (chases[chaseId].owner == msg.sender) throw;
 
-     if (wasteChases[wasteChaseId].wasteHunter != msg.sender) throw; // you can't cancel. you have not chase it
+     if (chases[chaseId].hunter != msg.sender) throw; // you can't cancel. you have not chase it
 
-     if (wasteChases[wasteChaseId].chaseExpiredTime < now) throw;//to late to cancel. incentive to respect your engagement to the wasteOwner. or if you have difficulty to meet the wasteOwner cancel it before the expired time...
+     if (chases[chaseId].expirationTime < now) throw;//to late to cancel. incentive to respect your engagement to the owner. or if you have difficulty to meet the owner cancel it before the expired time...
 
-     wasteChases[wasteChaseId].wasteHunter = address(0);//make it available to other wastehunter again
+     chases[chaseId].hunter = address(0);//make it available to other hunter again
 
-     wasteChases[wasteChaseId].wasteChaseStatus=WasteChaseStatus.CREATED;
+     chases[chaseId].status=ChaseStatus.CREATED;
 
-     if (wasteChases[wasteChaseId].chasePrice > this.balance ) throw; //sanity check
+     if (chases[chaseId].price > this.balance ) throw; //sanity check
      //refund your previous deposit
-     asyncSend(msg.sender,wasteChases[wasteChaseId].chasePrice);
+     asyncSend(msg.sender,chases[chaseId].price);
 
      return true;
   }
@@ -158,30 +162,30 @@ contract FarWaste is TownHall, PullPayment {
    IIIc- cancelACreatedWasteChase
    reputation --
   **/
-  function cancelACreatedWasteChase(uint wasteChaseId) stopInEmergency returns (bool successful){
-     if (wasteChases[wasteChaseId].wasteChaseStatus == WasteChaseStatus.SHOOT) throw;
-     if (wasteChases[wasteChaseId].wasteChaseStatus == WasteChaseStatus.CANCEL) throw;
-     if (wasteChases[wasteChaseId].wasteChaseStatus == WasteChaseStatus.EXPIRED) throw;
+  function cancelACreatedWasteChase(uint chaseId) stopInEmergency returns (bool successful){
+     if (chases[chaseId].status == ChaseStatus.SHOOT) throw;
+     if (chases[chaseId].status == ChaseStatus.CANCEL) throw;
+     if (chases[chaseId].status == ChaseStatus.EXPIRED) throw;
 
-     if (wasteChases[wasteChaseId].wasteOwner == wasteChases[wasteChaseId].wasteHunter ) throw; //waste chase already done
+     if (chases[chaseId].owner == chases[chaseId].hunter ) throw; //waste chase already done
 
-     if (wasteChases[wasteChaseId].wasteOwner != msg.sender) throw; //only the wasteOwner can cancel it
+     if (chases[chaseId].owner != msg.sender) throw; //only the owner can cancel it
 
-     if (wasteChases[wasteChaseId].chaseExpiredTime < now) throw;//to late to cancel.
+     if (chases[chaseId].expirationTime < now) throw;//to late to cancel.
 
-     if ((wasteChases[wasteChaseId].wasteChaseStatus == WasteChaseStatus.CHASED) && (wasteChases[wasteChaseId].wasteHunter !=  address(0))){
+     if ((chases[chaseId].status == ChaseStatus.CHASED) && (chases[chaseId].hunter !=  address(0))){
        // someone his chasing this waste with fund on it ... reputation ---
        //refund him
-       address wasteHunterToSent = wasteChases[wasteChaseId].wasteHunter;
-       wasteChases[wasteChaseId].wasteHunter = address(0);//make it available to other wastehunter again
+       address hunterToSent = chases[chaseId].hunter;
+       chases[chaseId].hunter = address(0);//make it available to other hunter again
        // change status
-       wasteChases[wasteChaseId].wasteChaseStatus=WasteChaseStatus.CANCEL;
-       wasteChasesCountByUser[msg.sender] -= 1;
-       if (wasteChases[wasteChaseId].chasePrice > this.balance ) throw; //sanity check
-       asyncSend(wasteHunterToSent,wasteChases[wasteChaseId].chasePrice);
+       chases[chaseId].status=ChaseStatus.CANCEL;
+       chasesProcessingByOwner[msg.sender] -= 1;
+       if (chases[chaseId].price > this.balance ) throw; //sanity check
+       asyncSend(hunterToSent,chases[chaseId].price);
      }else{
-       wasteChases[wasteChaseId].wasteChaseStatus=WasteChaseStatus.CANCEL;
-       wasteChasesCountByUser[msg.sender] -= 1;
+       chases[chaseId].status=ChaseStatus.CANCEL;
+       chasesProcessingByOwner[msg.sender] -= 1;
      }
      return true;
   }
@@ -190,30 +194,28 @@ contract FarWaste is TownHall, PullPayment {
    IIIc- Terminte an expired waste chase
    reputation -
   **/
-  function terminateAnExpiredWasteChase(uint wasteChaseId) stopInEmergency returns (bool successful){
-     if (wasteChases[wasteChaseId].chaseExpiredTime > now) throw;//not yet expired
-     if (wasteChases[wasteChaseId].wasteChaseStatus == WasteChaseStatus.SHOOT) throw;
-     if (wasteChases[wasteChaseId].wasteChaseStatus == WasteChaseStatus.CANCEL) throw;
-     if (wasteChases[wasteChaseId].wasteChaseStatus == WasteChaseStatus.EXPIRED) throw;
+  function terminateAnExpiredWasteChase(uint chaseId) stopInEmergency returns (bool successful){
+     if (chases[chaseId].expirationTime >= now) throw;//not yet expired
+     if (chases[chaseId].status == ChaseStatus.SHOOT) throw;
+     if (chases[chaseId].status == ChaseStatus.CANCEL) throw;
+     if (chases[chaseId].status == ChaseStatus.EXPIRED) throw;
 
-     if (wasteChases[wasteChaseId].wasteOwner == wasteChases[wasteChaseId].wasteHunter ) throw; //waste chase already done
+     if (chases[chaseId].owner == chases[chaseId].hunter ) throw; //waste chase already done
 
-     if (wasteChases[wasteChaseId].wasteOwner != msg.sender) throw; //only the wasteOwner temrinate an expired waste chase
+     if (chases[chaseId].owner != msg.sender) throw; //only the owner temrinate an expired waste chase
 
-     if ((wasteChases[wasteChaseId].wasteChaseStatus == WasteChaseStatus.CHASED) && (wasteChases[wasteChaseId].wasteHunter !=  address(0))){
+     if ((chases[chaseId].status == ChaseStatus.CHASED) && (chases[chaseId].hunter !=  address(0))){
        // someone his chasing this waste but has not come to take it or has not cancel his chase. he loose his deposit ( and reputation )
-       //deposit come to the wasteOwner
+       //deposit come to the owner
        // change status
-       wasteChases[wasteChaseId].wasteChaseStatus=WasteChaseStatus.EXPIRED;
-       wasteChasesCountByUser[msg.sender] -= 1;
-       if (wasteChases[wasteChaseId].chasePrice > this.balance ) throw; //sanity check
-       asyncSend(wasteChases[wasteChaseId].wasteOwner,wasteChases[wasteChaseId].chasePrice);
+       chases[chaseId].status=ChaseStatus.EXPIRED;
+       chasesProcessingByOwner[msg.sender] -= 1;
+       if (chases[chaseId].price > this.balance ) throw; //sanity check
+       asyncSend(chases[chaseId].owner,chases[chaseId].price);
      }else{
-       wasteChases[wasteChaseId].wasteChaseStatus=WasteChaseStatus.EXPIRED;
-       wasteChasesCountByUser[msg.sender] -= 1;
+       chases[chaseId].status=ChaseStatus.EXPIRED;
+       chasesProcessingByOwner[msg.sender] -= 1;
      }
      return true;
   }
-
-
 }
