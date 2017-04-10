@@ -14,8 +14,9 @@ contract FarWaste is TownHall, PullPayment {
      uint expirationTime;
      bytes32 descriptionHash;
      address hunter;
-     bytes32 dealPasswordHash;
+     bytes32 dealPasswordFromHunterHash;
      address owner;
+     bytes32 dealPasswordFromOwnerHash;
   }
 
   mapping(uint => WasteChase) private chases;
@@ -26,7 +27,7 @@ contract FarWaste is TownHall, PullPayment {
 
   function getWasteChase(uint chaseId)
   		constant
-  		returns (ChaseStatus status,uint price, uint expirationTime,bytes32 descriptionHash,address hunter,bytes32 dealPasswordHash,address owner) {
+  		returns (ChaseStatus status,uint price, uint expirationTime,bytes32 descriptionHash,address hunter,bytes32 dealPasswordFromHunterHash,address owner,bytes32 dealPasswordFromOwnerHash) {
   		WasteChase aChase = chases[chaseId];
   		return (
         aChase.status,
@@ -34,8 +35,9 @@ contract FarWaste is TownHall, PullPayment {
   			aChase.expirationTime,
         aChase.descriptionHash,
         aChase.hunter,
-        aChase.dealPasswordHash,
-        aChase.owner
+        aChase.dealPasswordFromHunterHash,
+        aChase.owner,
+        aChase.dealPasswordFromOwnerHash
         );
   }
 
@@ -64,13 +66,14 @@ contract FarWaste is TownHall, PullPayment {
    I- createWasteChase
    reputation +
   **/
-  function createWasteChase (uint _chasePrice, bytes32 _chaseDescriptionHash,uint _wasteChaseDuration) stopInEmergency returns (bool successful){
+  function createWasteChase (uint _chasePrice, bytes32 _chaseDescriptionHash,uint _wasteChaseDuration,bytes32 _dealPasswordFromOwnerHash) stopInEmergency returns (bool successful){
     if(numChases + 1 < numChases) throw; //overflow ?
     if(_wasteChaseDuration > maxWasteChaseDuration ) throw;
     if(_wasteChaseDuration < minWasteChaseDuration ) throw;
     if(_chasePrice < minChasePrice ) throw;
     if(_chasePrice > maxChasePrice ) throw;
     if(chasesProcessingByOwner[msg.sender] >= maxWasteChaseByUser ) throw;
+    if (_dealPasswordFromOwnerHash == 0 ) throw;
 
     uint chaseId = numChases++;
 
@@ -80,8 +83,9 @@ contract FarWaste is TownHall, PullPayment {
                           			expirationTime: now+_wasteChaseDuration,
                                 descriptionHash:_chaseDescriptionHash,
                                 hunter:address(0),
-                                dealPasswordHash:0,
-                                owner:msg.sender
+                                dealPasswordFromHunterHash:0,
+                                owner:msg.sender,
+                                dealPasswordFromOwnerHash:_dealPasswordFromOwnerHash
                           		  });
     chasesProcessingByOwner[msg.sender] += 1;
     chaseIds.push(chaseId);
@@ -92,7 +96,7 @@ contract FarWaste is TownHall, PullPayment {
    II- chaseAWaste
    reputation +
   **/
-  function chaseAWaste(uint chaseId,  bytes32 _dealPasswordHash) payable stopInEmergency returns (bool successful){
+  function chaseAWaste(uint chaseId,  bytes32 _dealPasswordFromHunterHash) payable stopInEmergency returns (bool successful){
      if (chases[chaseId].status != ChaseStatus.CREATED) throw;//nothing at this id chaseId
 
      if (chases[chaseId].owner == chases[chaseId].hunter ) throw; //waste chase already done
@@ -103,8 +107,10 @@ contract FarWaste is TownHall, PullPayment {
 
      if (chases[chaseId].expirationTime < now) throw;
 
+     if (_dealPasswordFromHunterHash == 0 ) throw;
+
      chases[chaseId].hunter = msg.sender;
-     chases[chaseId].dealPasswordHash=_dealPasswordHash;
+     chases[chaseId].dealPasswordFromHunterHash=_dealPasswordFromHunterHash;
      chases[chaseId].status= ChaseStatus.CHASED;
 
      return true;
@@ -114,7 +120,7 @@ contract FarWaste is TownHall, PullPayment {
    IIIa- shootAWaste
     reputation ++
   **/
-  function shootAWaste(uint chaseId,bytes32 dealPassword,bytes32 signedHunterHash, uint8 v, bytes32 r, bytes32 s) stopInEmergency returns (address successful){
+  function shootAWaste(uint chaseId,bytes32 dealPasswordFromHunter,bytes32 signedHunterHash, uint8 v, bytes32 r, bytes32 s) stopInEmergency returns (address successful){
     if (chases[chaseId].status != ChaseStatus.CHASED) throw;//nothing at this id chaseId
     if (chases[chaseId].price > this.balance ) throw; //sanity check
     if (chases[chaseId].owner != msg.sender) throw;
@@ -125,8 +131,12 @@ contract FarWaste is TownHall, PullPayment {
     //check that the signed message is from the right hunter.
     if (chases[chaseId].hunter != recoverAddress) throw;
 
-    //check the deal password => hunter and owner has meet each other.
-    if (chases[chaseId].dealPasswordHash != sha3(dealPassword)) throw;
+    //hunter must have signed the dealPasswordFromOwner, prove that hunter has receive the waste from owner.
+    if (chases[chaseId].dealPasswordFromOwnerHash != sha3(signedHunterHash)) throw;
+
+    //owner must receive the dealPasswordFromHunter, prove that owner has meet the right hunter who has sent ether and
+    //dealPasswordFromHunter hash at chaseAWaste call :
+    if (chases[chaseId].dealPasswordFromHunterHash != sha3(dealPasswordFromHunter)) throw;
 
     address ownerToSent = chases[chaseId].owner;
     //change waste ownership
@@ -135,7 +145,8 @@ contract FarWaste is TownHall, PullPayment {
     chasesCompletedByHunter[recoverAddress] += 1;
     chases[chaseId].status=ChaseStatus.SHOOT;
     //clear it. not needed anymore.
-    chases[chaseId].dealPasswordHash=0;
+    chases[chaseId].dealPasswordFromHunterHash=0;
+    chases[chaseId].dealPasswordFromOwnerHash=0;
     //process async payement
     asyncSend(ownerToSent,chases[chaseId].price);
 
@@ -158,7 +169,7 @@ contract FarWaste is TownHall, PullPayment {
      if (chases[chaseId].expirationTime < now) throw;//to late to cancel. incentive to respect your engagement to the owner. or if you have difficulty to meet the owner cancel it before the expired time...
 
      chases[chaseId].hunter = address(0);//make it available to other hunter again
-     chases[chaseId].dealPasswordHash=0;
+     chases[chaseId].dealPasswordFromHunterHash=0;
 
      chases[chaseId].status=ChaseStatus.CREATED;
 
@@ -188,13 +199,15 @@ contract FarWaste is TownHall, PullPayment {
        //refund him
        address hunterToSent = chases[chaseId].hunter;
        chases[chaseId].hunter = address(0);//make it available to other hunter again
-       chases[chaseId].dealPasswordHash=0;
+       chases[chaseId].dealPasswordFromHunterHash=0;
+       chases[chaseId].dealPasswordFromOwnerHash=0;
        // change status
        chases[chaseId].status=ChaseStatus.CANCEL;
        chasesProcessingByOwner[msg.sender] -= 1;
        if (chases[chaseId].price > this.balance ) throw; //sanity check
        asyncSend(hunterToSent,chases[chaseId].price);
      }else{
+       chases[chaseId].dealPasswordFromOwnerHash=0;
        chases[chaseId].status=ChaseStatus.CANCEL;
        chasesProcessingByOwner[msg.sender] -= 1;
      }
@@ -221,7 +234,8 @@ contract FarWaste is TownHall, PullPayment {
        // change status
        chases[chaseId].status=ChaseStatus.EXPIRED;
        //clear it. not needed anymore.
-       chases[chaseId].dealPasswordHash=0;
+       chases[chaseId].dealPasswordFromHunterHash=0;
+       chases[chaseId].dealPasswordFromOwnerHash=0;
        chasesProcessingByOwner[msg.sender] -= 1;
        if (chases[chaseId].price > this.balance ) throw; //sanity check
        asyncSend(chases[chaseId].owner,chases[chaseId].price);

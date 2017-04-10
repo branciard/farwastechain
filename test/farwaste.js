@@ -166,6 +166,7 @@ contract('FarWaste', function(accounts) {
             50,//price
             web3.sha3("test desc"),//desciption
             50, //duration in sec
+            web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
             {from:wasteOwner,value:0, gas: 3000000}
           )
           .then(txMined => {
@@ -178,7 +179,7 @@ contract('FarWaste', function(accounts) {
             }
           )
           .then(aWasteChase => {
-                [status,price,expirationTime,descriptionHash,hunter,dealPasswordHash,owner]=aWasteChase;
+                [status,price,expirationTime,descriptionHash,hunter,dealPasswordFromHunterHash,owner]=aWasteChase;
                 assert.strictEqual(status.toNumber(), 1, "aWasteChase WasteChaseStatus is 1 = CREATED");
                 assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice is 50");
                 assert.strictEqual(expirationTime.toNumber(), currentTime + 50, "aWasteChase chaseExpiredTime is cuurentDate + 50");
@@ -192,6 +193,7 @@ contract('FarWaste', function(accounts) {
             60,//price
             web3.sha3("test desc 2"),//desciption
             60, //duration in sec
+            web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
             {from:wasteOwner,value:0, gas: 3000000}
           ))
           .then(txMined => {
@@ -204,7 +206,7 @@ contract('FarWaste', function(accounts) {
             }
           )
           .then(aWasteChase => {
-              [status,price,expirationTime,descriptionHash,hunter,dealPasswordHash,owner]=aWasteChase;
+              [status,price,expirationTime,descriptionHash,hunter,dealPasswordFromHunterHash,owner]=aWasteChase;
               assert.strictEqual(status.toNumber(), 1, "aWasteChase WasteChaseStatus is 1 = CREATED");
               assert.strictEqual(price.toNumber(), 60, "aWasteChase chasePrice is 60");
               assert.strictEqual(expirationTime.toNumber(), currentTime + 60, "aWasteChase chaseExpiredTime is cuurentDate + 50");
@@ -217,6 +219,7 @@ contract('FarWaste', function(accounts) {
                     50,//price
                     web3.sha3("test desc"),//desciption
                     50, //duration in sec
+                    web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                     {from:wasteOwner,value:0, gas: 3000000}
                   )
               },
@@ -230,6 +233,7 @@ contract('FarWaste', function(accounts) {
                 49,//price
                 web3.sha3("test desc"),//desciption
                 50, //duration in sec
+                web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                 {from:wasteOwner,value:0, gas: 3000000}
               )
           },
@@ -242,6 +246,7 @@ contract('FarWaste', function(accounts) {
                 101,//price
                 web3.sha3("test desc"),//desciption
                 50, //duration in sec
+                web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                 {from:wasteOwner,value:0, gas: 3000000}
               )
           },
@@ -254,6 +259,7 @@ contract('FarWaste', function(accounts) {
                 50,//price
                 web3.sha3("test desc"),//desciption
                 49, //duration in sec
+                web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                 {from:wasteOwner,value:0, gas: 3000000}
               )
           },
@@ -266,6 +272,7 @@ contract('FarWaste', function(accounts) {
                 50,//price
                 web3.sha3("test desc"),//desciption
                 101, //duration in sec
+                web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                 {from:wasteOwner,value:0, gas: 3000000}
               )
           },
@@ -277,6 +284,7 @@ contract('FarWaste', function(accounts) {
                             50,//price
                             web3.sha3("test desc"),//desciption
                             50, //duration in sec.
+                            web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                             {from:wasteOwner,value:0, gas: 3000000})
             .then(txMined => assert.isBelow(txMined.receipt.gasUsed, 3000000, "should not use all gas"))
             .then(() => aFarWasteInstance.modifyChaseDurationLimit(51,100,{from:sheriff}))
@@ -287,6 +295,7 @@ contract('FarWaste', function(accounts) {
                                     50,//price
                                     web3.sha3("test desc"),//desciption
                                     50, //duration in sec.
+                                    web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                                     {from:wasteOwner,value:0, gas: 3000000}
                                   )
                                 },
@@ -299,6 +308,7 @@ contract('FarWaste', function(accounts) {
                             50,//price
                             web3.sha3("test desc"),//desciption
                             50, //duration in sec.
+                            web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                             {from:wasteOwner,value:0, gas: 3000000})
             .then(txMined => assert.isBelow(txMined.receipt.gasUsed, 3000000, "should not use all gas"))
             .then(() => aFarWasteInstance.modifyChasePriceLimit(51,100,{from:sheriff}))
@@ -309,6 +319,7 @@ contract('FarWaste', function(accounts) {
                                     50,//price
                                     web3.sha3("test desc"),//desciption
                                     50, //duration in sec.
+                                    web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                                     {from:wasteOwner,value:0, gas: 3000000}
                                   )
                                 },
@@ -321,6 +332,7 @@ contract('FarWaste', function(accounts) {
                             50,//price
                             web3.sha3("test desc"),//desciption
                             100, //duration in sec.
+                            web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                             {from:wasteOwner,value:0, gas: 3000000})
             .then(txMined => assert.isBelow(txMined.receipt.gasUsed, 3000000, "should not use all gas"))
             .then(() => aFarWasteInstance.modifyChaseDurationLimit(50,99,{from:sheriff}))
@@ -331,6 +343,7 @@ contract('FarWaste', function(accounts) {
                                     50,//price
                                     web3.sha3("test desc"),//desciption
                                     100, //duration in sec.
+                                    web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                                     {from:wasteOwner,value:0, gas: 3000000}
                                   )
                                 },
@@ -344,6 +357,7 @@ contract('FarWaste', function(accounts) {
                               100,//price
                               web3.sha3("test desc"),//desciption
                               50, //duration in sec.
+                              web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                               {from:wasteOwner,value:0, gas: 3000000})
               .then(txMined => assert.isBelow(txMined.receipt.gasUsed, 3000000, "should not use all gas"))
               .then(() => aFarWasteInstance.modifyChasePriceLimit(50,99,{from:sheriff}))
@@ -354,6 +368,7 @@ contract('FarWaste', function(accounts) {
                                       100,//price
                                       web3.sha3("test desc"),//desciption
                                       50, //duration in sec.
+                                      web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                                       {from:wasteOwner,value:0, gas: 3000000}
                                     )
                                   },
@@ -382,6 +397,7 @@ contract('FarWaste', function(accounts) {
                               50,//price
                               web3.sha3("test desc"),//desciption
                               5, //duration in sec.
+                              web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                               {from:wasteOwner,value:0, gas: 3000000});
           })
           .then(txMined => {
@@ -395,7 +411,7 @@ contract('FarWaste', function(accounts) {
       });
 
       it("it should pass to chase this existing waste by wasteHunter  created by wasteOwner", function() {
-          return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("deal passwd shared between owner & hunter"), { encoding: 'hex' }),{from:wasteHunter, value:50, gas: 3000000})
+          return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("a passwd choose by hunter"), { encoding: 'hex' }),{from:wasteHunter, value:50, gas: 3000000})
           .then(txMined => {
               assert.isBelow(txMined.receipt.gasUsed, 3000000, "should not use all gas");
               return web3.eth.getBalancePromise(aFarWasteInstance.address);
@@ -411,7 +427,7 @@ contract('FarWaste', function(accounts) {
             }
           )
           .then(aWasteChase => {
-                [status,price,expirationTime,descriptionHash,hunter,dealPasswordHash,owner]=aWasteChase;
+                [status,price,expirationTime,descriptionHash,hunter,dealPasswordFromHunterHash,owner]=aWasteChase;
                 assert.strictEqual(status.toNumber(), 2, "aWasteChase WasteChaseStatus is 2 = CHASED");
                 assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice is 50");
                 assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
@@ -419,7 +435,7 @@ contract('FarWaste', function(accounts) {
                 assert.strictEqual(owner, wasteOwner, "aWasteChase wasteOwner is wasteOwner");
                 //chaseAWaste twice should failed
                 return Extensions.expectedExceptionPromise(function () {
-                  return aFarWasteInstance.chaseAWaste(0,web3.sha3("a passwd choose by hunter"),{from:wasteHunter, value:50, gas: 3000000})
+                  return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("a passwd choose by hunter"), { encoding: 'hex' }),{from:wasteHunter, value:50, gas: 3000000})
                                 },
                                 3000000);
           });
@@ -427,21 +443,21 @@ contract('FarWaste', function(accounts) {
 
         it("it should failed to chase with 0 value sent", function() {
           return Extensions.expectedExceptionPromise(function () {
-            return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("deal passwd shared between owner & hunter"), { encoding: 'hex' }),{from:wasteHunter, value:0, gas: 3000000})
+            return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("a passwd choose by hunter"), { encoding: 'hex' }),{from:wasteHunter, value:0, gas: 3000000})
                           },
                           3000000);
         });
 
         it("it should failed to chase with value under the chasePrice 50", function() {
           return Extensions.expectedExceptionPromise(function () {
-            return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("deal passwd shared between owner & hunter"), { encoding: 'hex' }),{from:wasteHunter, value:49, gas: 3000000})
+            return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("a passwd choose by hunter"), { encoding: 'hex' }),{from:wasteHunter, value:49, gas: 3000000})
                           },
                           3000000);
         });
 
         it("it should failed to chase with value above the chasePrice 50", function() {
           return Extensions.expectedExceptionPromise(function () {
-            return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("deal passwd shared between owner & hunter"), { encoding: 'hex' }),{from:wasteHunter, value:51, gas: 3000000})
+            return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("a passwd choose by hunter"), { encoding: 'hex' }),{from:wasteHunter, value:51, gas: 3000000})
                           },
                           3000000);
         });
@@ -450,7 +466,7 @@ contract('FarWaste', function(accounts) {
         it("it should failed to chase an expired chaseWaste", function() {
           Extensions.sleep(8000);
           return Extensions.expectedExceptionPromise(function () {
-            return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("deal passwd shared between owner & hunter"), { encoding: 'hex' }),{from:wasteHunter, value:50, gas: 3000000})
+            return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("a passwd choose by hunter"), { encoding: 'hex' }),{from:wasteHunter, value:50, gas: 3000000})
                           },
                           3000000);
         });
@@ -477,6 +493,7 @@ contract('FarWaste', function(accounts) {
                                     50,//price
                                     web3.sha3("test desc"),//desciption
                                     5, //duration in sec.
+                                    web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                                     {from:wasteOwner,value:0, gas: 3000000});
                 })
                 .then(txMined => {
@@ -485,7 +502,7 @@ contract('FarWaste', function(accounts) {
                 })
                 .then(getWasteChasesCountCall => {
                     assert.strictEqual(getWasteChasesCountCall.toNumber(), 1, "1 when call getWasteChasesCount");
-                    return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("deal passwd shared between owner & hunter"), { encoding: 'hex' }),{from:wasteHunter, value:50, gas: 3000000});
+                    return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("a passwd choose by hunter"), { encoding: 'hex' }),{from:wasteHunter, value:50, gas: 3000000});
                   }
                 )
                 .then(txMined => {
@@ -498,7 +515,7 @@ contract('FarWaste', function(accounts) {
                   }
                 )
                 .then(aWasteChase => {
-                      [status,price,expirationTime,descriptionHash,hunter,dealPasswordHash,owner]=aWasteChase;
+                      [status,price,expirationTime,descriptionHash,hunter,dealPasswordFromHunterHash,owner]=aWasteChase;
                       assert.strictEqual(status.toNumber(), 2, "aWasteChase WasteChaseStatus is 2 = CHASED");
                       assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice is 50");
                       assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
@@ -516,17 +533,17 @@ contract('FarWaste', function(accounts) {
                return aFarWasteInstance.getMyProcessingWasteChasesCount.call({from:wasteOwner, gas: 3000000})
                .then(getMyProcessingWasteChasesCount =>{
                  assert.strictEqual(getMyProcessingWasteChasesCount.toNumber(), 1, "wasteOwner has 1 waste chase");
-                 return Extensions.signMessage(wasteHunter,"a passwd choose by hunter");
+                 return Extensions.signMessage(wasteHunter,"a passwd choose by owner");
                 })
                 .then(sig => {
-                    return aFarWasteInstance.shootAWaste(0,web3.sha3("deal passwd shared between owner & hunter"),sig.sha,sig.v,sig.r,sig.s,{from:wasteOwner, gas: 3000000});
+                    return aFarWasteInstance.shootAWaste(0,web3.sha3("a passwd choose by hunter"),sig.sha,sig.v,sig.r,sig.s,{from:wasteOwner, gas: 3000000});
                 })
                 .then(txMined => {
                    assert.isBelow(txMined.receipt.gasUsed, 3000000, "should not use all gas");
                    return aFarWasteInstance.getWasteChase(0);
                 })
                 .then(aWasteChase => {
-                      [status,price,expirationTime,descriptionHash,hunter,dealPasswordHash,owner]=aWasteChase;
+                      [status,price,expirationTime,descriptionHash,hunter,dealPasswordFromHunterHash,owner]=aWasteChase;
                       assert.strictEqual(status.toNumber(), 3, "aWasteChase WasteChaseStatus is 3 = SHOOT");
                       assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice was 50");
                       assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
@@ -566,55 +583,66 @@ contract('FarWaste', function(accounts) {
                );
             });
 
-            it("shootAWaste is call by the wasteOwner with wrong signed msg from wasteHunter.", function() {
-              return Extensions.signMessage(wasteOwner,"0")//must be signed by wasteHunter not wasteOwner
+            it("shootAWaste is call with wrong signed message person", function() {
+              return Extensions.signMessage(wasteOwner,"a passwd choose by owner")//must be signed by wasteHunter not wasteOwner
               .then(sig => {
                 return Extensions.expectedExceptionPromise(function () {
-                  return aFarWasteInstance.shootAWaste(0,web3.sha3("deal passwd shared between owner & hunter"),sig.sha,sig.v,sig.r,sig.s,{from:wasteOwner, gas: 3000000});
+                  return aFarWasteInstance.shootAWaste(0,web3.sha3("a passwd choose by hunter"),sig.sha,sig.v,sig.r,sig.s,{from:wasteOwner, gas: 3000000});
                                 },
                                 3000000);
               });
             });
 
             it("shootAWaste to an unknown id failed", function() {
-              return Extensions.signMessage(wasteHunter,"a passwd choose by hunter")
+              return Extensions.signMessage(wasteHunter,"a passwd choose by owner")
               .then(sig => {
                 return Extensions.expectedExceptionPromise(function () {
-                  return aFarWasteInstance.shootAWaste(10,web3.sha3("deal passwd shared between owner & hunter"),sig.sha,sig.v,sig.r,sig.s,{from:wasteOwner, gas: 3000000});
+                  return aFarWasteInstance.shootAWaste(10,web3.sha3("a passwd choose by hunter"),sig.sha,sig.v,sig.r,sig.s,{from:wasteOwner, gas: 3000000});
                                 },
                                 3000000);
               });
             });
 
             it("shootAWaste for id 0 : only wasteOwner can call it", function() {
-              return Extensions.signMessage(wasteHunter,"a passwd choose by hunter")
+              return Extensions.signMessage(wasteHunter,"a passwd choose by owner")
               .then(sig => {
                 return Extensions.expectedExceptionPromise(function () {
-                  return aFarWasteInstance.shootAWaste(0,web3.sha3("deal passwd shared between owner & hunter"),sig.sha,sig.v,sig.r,sig.s,{from:wasteHunter, gas: 3000000});
+                  return aFarWasteInstance.shootAWaste(0,web3.sha3("a passwd choose by hunter"),sig.sha,sig.v,sig.r,sig.s,{from:wasteHunter, gas: 3000000});
                                 },
                                 3000000);
               });
             });
 
             it("shootAWaste id 0 has been paid by wasteHunter. others can't pretend to take it", function() {
-              return Extensions.signMessage(sheriff,"a passwd choose by hunter")
+              return Extensions.signMessage(sheriff,"a passwd choose by owner")
               .then(sig => {
                 return Extensions.expectedExceptionPromise(function () {
-                  return aFarWasteInstance.shootAWaste(0,web3.sha3("deal passwd shared between owner & hunter"),sig.sha,sig.v,sig.r,sig.s,{from:wasteOwner, gas: 3000000});
+                  return aFarWasteInstance.shootAWaste(0,web3.sha3("a passwd choose by hunter"),sig.sha,sig.v,sig.r,sig.s,{from:wasteOwner, gas: 3000000});
                                 },
                                 3000000);
               });
             });
 
             it("wasteOwner must give the right password to validate the shootAWaste.", function() {
-              return Extensions.signMessage(wasteHunter,"a passwd choose by hunter")
+              return Extensions.signMessage(wasteHunter,"a passwd choose by owner")
               .then(sig => {
                 return Extensions.expectedExceptionPromise(function () {
-                  return aFarWasteInstance.shootAWaste(0,web3.sha3("wrong deal password"),sig.sha,sig.v,sig.r,sig.s,{from:wasteOwner, gas: 3000000});
+                  return aFarWasteInstance.shootAWaste(0,web3.sha3("wrong hunter deal password"),sig.sha,sig.v,sig.r,sig.s,{from:wasteOwner, gas: 3000000});
                                 },
                                 3000000);
               });
             });
+
+            it("wasteHunter must give the right password to validate the shootAWaste.", function() {
+              return Extensions.signMessage(wasteHunter,"wrong owner deal password")
+              .then(sig => {
+                return Extensions.expectedExceptionPromise(function () {
+                  return aFarWasteInstance.shootAWaste(0,web3.sha3("a passwd choose by hunter"),sig.sha,sig.v,sig.r,sig.s,{from:wasteOwner, gas: 3000000});
+                                },
+                                3000000);
+              });
+            });
+
 
 
     });
@@ -640,6 +668,7 @@ contract('FarWaste', function(accounts) {
                                         50,//price
                                         web3.sha3("test desc"),//desciption
                                         5, //duration in sec.
+                                        web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                                         {from:wasteOwner,value:0, gas: 3000000});
                     })
                     .then(txMined => {
@@ -648,7 +677,7 @@ contract('FarWaste', function(accounts) {
                     })
                     .then(getWasteChasesCountCall => {
                         assert.strictEqual(getWasteChasesCountCall.toNumber(), 1, "1 when call getWasteChasesCount");
-                        return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("deal passwd shared between owner & hunter"), { encoding: 'hex' }),{from:wasteHunter, value:50, gas: 3000000});
+                        return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("a passwd choose by hunter"), { encoding: 'hex' }),{from:wasteHunter, value:50, gas: 3000000});
                       }
                     )
                     .then(txMined => {
@@ -661,7 +690,7 @@ contract('FarWaste', function(accounts) {
                       }
                     )
                     .then(aWasteChase => {
-                          [status,price,expirationTime,descriptionHash,hunter,dealPasswordHash,owner]=aWasteChase;
+                          [status,price,expirationTime,descriptionHash,hunter,dealPasswordFromHunterHash,owner]=aWasteChase;
                           assert.strictEqual(status.toNumber(), 2, "aWasteChase WasteChaseStatus is 2 = CHASED");
                           assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice is 50");
                           assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
@@ -687,7 +716,7 @@ contract('FarWaste', function(accounts) {
                        return aFarWasteInstance.getWasteChase(0);
                     })
                     .then(aWasteChase => {
-                          [status,price,expirationTime,descriptionHash,hunter,dealPasswordHash,owner]=aWasteChase;
+                          [status,price,expirationTime,descriptionHash,hunter,dealPasswordFromHunterHash,owner]=aWasteChase;
                           assert.strictEqual(status.toNumber(), 1, "aWasteChase WasteChaseStatus return to 1 = CREATED");
                           assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice was 50");
                           assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
@@ -773,6 +802,7 @@ contract('FarWaste', function(accounts) {
                                         50,//price
                                         web3.sha3("test desc"),//desciption
                                         5, //duration in sec.
+                                        web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                                         {from:wasteOwner,value:0, gas: 3000000});
                     })
                     .then(txMined => {
@@ -781,7 +811,7 @@ contract('FarWaste', function(accounts) {
                     })
                     .then(getWasteChasesCountCall => {
                         assert.strictEqual(getWasteChasesCountCall.toNumber(), 1, "1 when call getWasteChasesCount");
-                        return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("deal passwd shared between owner & hunter"), { encoding: 'hex' }),{from:wasteHunter, value:50, gas: 3000000});
+                        return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("a passwd choose by hunter"), { encoding: 'hex' }),{from:wasteHunter, value:50, gas: 3000000});
                       }
                     )
                     .then(txMined => {
@@ -794,7 +824,7 @@ contract('FarWaste', function(accounts) {
                       }
                     )
                     .then(aWasteChase => {
-                          [status,price,expirationTime,descriptionHash,hunter,dealPasswordHash,owner]=aWasteChase;
+                          [status,price,expirationTime,descriptionHash,hunter,dealPasswordFromHunterHash,owner]=aWasteChase;
                           assert.strictEqual(status.toNumber(), 2, "aWasteChase WasteChaseStatus is 2 = CHASED");
                           assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice is 50");
                           assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
@@ -819,7 +849,7 @@ contract('FarWaste', function(accounts) {
                        return aFarWasteInstance.getWasteChase(0);
                     })
                     .then(aWasteChase => {
-                          [status,price,expirationTime,descriptionHash,hunter,dealPasswordHash,owner]=aWasteChase;
+                          [status,price,expirationTime,descriptionHash,hunter,dealPasswordFromHunterHash,owner]=aWasteChase;
                           assert.strictEqual(status.toNumber(), 4, "aWasteChase WasteChaseStatus return to 4 = CANCEL");
                           assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice was 50");
                           assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
@@ -908,6 +938,7 @@ contract('FarWaste', function(accounts) {
                                   50,//price
                                   web3.sha3("test desc"),//desciption
                                   5, //duration in sec.
+                                  web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                                   {from:wasteOwner,value:0, gas: 3000000});
               })
               .then(txMined => {
@@ -937,7 +968,7 @@ contract('FarWaste', function(accounts) {
                  return aFarWasteInstance.getWasteChase(0);
               })
               .then(aWasteChase => {
-                    [status,price,expirationTime,descriptionHash,hunter,dealPasswordHash,owner]=aWasteChase;
+                    [status,price,expirationTime,descriptionHash,hunter,dealPasswordFromHunterHash,owner]=aWasteChase;
                     assert.strictEqual(status.toNumber(), 4, "aWasteChase WasteChaseStatus return to 4 = CANCEL");
                     assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice was 50");
                     assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
@@ -1007,6 +1038,7 @@ contract('FarWaste', function(accounts) {
                             50,//price
                             web3.sha3("test desc"),//desciption
                             5, //duration in sec.
+                            web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                             {from:wasteOwner,value:0, gas: 3000000});
         })
         .then(txMined => {
@@ -1015,7 +1047,7 @@ contract('FarWaste', function(accounts) {
         })
         .then(getWasteChasesCountCall => {
             assert.strictEqual(getWasteChasesCountCall.toNumber(), 1, "1 when call getWasteChasesCount");
-            return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("deal passwd shared between owner & hunter"), { encoding: 'hex' }),{from:wasteHunter, value:50, gas: 3000000});
+            return aFarWasteInstance.chaseAWaste(0,web3.sha3(web3.sha3("a passwd choose by hunter"), { encoding: 'hex' }),{from:wasteHunter, value:50, gas: 3000000});
           }
         )
         .then(txMined => {
@@ -1028,7 +1060,7 @@ contract('FarWaste', function(accounts) {
           }
         )
         .then(aWasteChase => {
-              [status,price,expirationTime,descriptionHash,hunter,dealPasswordHash,owner]=aWasteChase;
+              [status,price,expirationTime,descriptionHash,hunter,dealPasswordFromHunterHash,owner]=aWasteChase;
               assert.strictEqual(status.toNumber(), 2, "aWasteChase WasteChaseStatus is 2 = CHASED");
               assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice is 50");
               assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
@@ -1054,7 +1086,7 @@ contract('FarWaste', function(accounts) {
            return aFarWasteInstance.getWasteChase(0);
         })
         .then(aWasteChase => {
-              [status,price,expirationTime,descriptionHash,hunter,dealPasswordHash,owner]=aWasteChase;
+              [status,price,expirationTime,descriptionHash,hunter,dealPasswordFromHunterHash,owner]=aWasteChase;
               assert.strictEqual(status.toNumber(), 5, "aWasteChase WasteChaseStatus return to 5 = EXPIRED");
               assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice was 50");
               assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
@@ -1137,6 +1169,7 @@ describe("Test terminateAnExpiredWasteChase on a created waste and then expired 
                           50,//price
                           web3.sha3("test desc"),//desciption
                           5, //duration in sec.
+                          web3.sha3(web3.sha3("a passwd choose by owner"), { encoding: 'hex' }),
                           {from:wasteOwner,value:0, gas: 3000000});
       })
       .then(txMined => {
@@ -1167,7 +1200,7 @@ describe("Test terminateAnExpiredWasteChase on a created waste and then expired 
          return aFarWasteInstance.getWasteChase(0);
       })
       .then(aWasteChase => {
-            [status,price,expirationTime,descriptionHash,hunter,dealPasswordHash,owner]=aWasteChase;
+            [status,price,expirationTime,descriptionHash,hunter,dealPasswordFromHunterHash,owner]=aWasteChase;
             assert.strictEqual(status.toNumber(), 5, "aWasteChase WasteChaseStatus return to 5 = EXPIRED");
             assert.strictEqual(price.toNumber(), 50, "aWasteChase chasePrice was 50");
             assert.strictEqual(descriptionHash, web3.sha3("test desc"), "aWasteChase chaseDescription is test desc");
